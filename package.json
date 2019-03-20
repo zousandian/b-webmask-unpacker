@@ -1,0 +1,11 @@
+{
+  "name": "b-webmask-unpacker",
+  "version": "1.0.0",
+  "description": "B 站弹幕蒙版文件 .webmask 解析工具",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
