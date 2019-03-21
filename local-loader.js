@@ -19,7 +19,8 @@ class LoacalLoader {
       })
 
       readable.on('error', (err) => {
-        console.log(err)
+        // console.log(err)
+        reject(err)
       })
 
       readable.on('end', () => {

@@ -1,13 +1,15 @@
 const pako = require('pako')
+const path = require('path')
+const fs = require('fs')
 
 const MASK_FILE_TAG = 'MASK'
 const MASK_FILE_VERSION = 1
 const MASK_FILE_CHECKCODE = 2 
 
-
 class Unpacker {
-  constructor (dataLoader) {
+  constructor (dataLoader, unpackDir) {
     this.loader = dataLoader
+    this.dst = unpackDir
     this.buffer = Buffer.alloc(0)
     this.segmentsData = []
     this.masksData = []
@@ -71,7 +73,9 @@ class Unpacker {
       const offsetNext = this.segmentsData[i + 1].offset
       const length = offsetNext - offset
       this.buffer = await this.loadRange(offset, length)
-      this.masksData = this.masksData.concat(this.parseSegmentMasks(this.buffer))
+      const masks = this.parseSegmentMasks(this.buffer)
+      // console.log(masks.length)
+      this.masksData = this.masksData.concat(masks)
     }
 
     console.log('共包含蒙版数量：', this.masksData.length)
@@ -95,6 +99,30 @@ class Unpacker {
     return arr
   }
 
+  async saveMasks () {
+    console.log('正在解压...')
+    console.log('目标路径：' + this.dst)
+    return Promise.all(
+      this.masksData.map(item => {
+        return new Promise((resolve, reject) => {
+          try {
+            let filename = item.time + '.' + item.data.match(/\/(\w+)/)[1]
+            let data = item.data.split(';base64,').pop()
+
+            const writeStream = fs.createWriteStream(path.resolve(this.dst, filename), {
+              encoding: 'base64'
+            })
+
+            writeStream.on('finish', resolve)
+            writeStream.end(data)
+          } catch (err) {
+            console.log(err)
+          }
+        })
+      })
+    )
+  }
+
   destroy () {
     this.readable = null
     this.buffer = null
@@ -106,6 +134,8 @@ class Unpacker {
       if (!isPass) return this.destroy()
       await this.parseSegments()
       await this.parseMasks()
+      await this.saveMasks()
+      console.log('解压完成')
     } catch (err) {
       console.error(err)
     }
